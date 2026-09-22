@@ -1,0 +1,124 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not(.light), :root:not(.light) *) {
+      @slot;
+    }
+  }
+}
+
+:root {
+  --background: light-dark(#faf9f7, #111113);
+  --foreground: light-dark(#18181b, #ededef);
+  --card: light-dark(#ffffff, #19191c);
+  --card-foreground: light-dark(#18181b, #ededef);
+  --border: light-dark(#e7e5e2, #2a2a2e);
+  --border-strong: light-dark(#d4d2ce, #3a3a3f);
+  --muted: light-dark(#f2f1ee, #1c1c1f);
+  --muted-foreground: light-dark(#6b6b6f, #a1a1aa);
+  --primary: light-dark(#18181b, #fafaf9);
+  --primary-foreground: light-dark(#fafaf9, #18181b);
+  --accent: light-dark(#4f46e5, #818cf8);
+  --accent-foreground: light-dark(#ffffff, #111113);
+  --accent-soft: light-dark(#eef0fd, #1f2142);
+  --success: light-dark(#15803d, #4ade80);
+  --success-soft: light-dark(#ecfdf3, #0f2918);
+  --warning: light-dark(#b45309, #fbbf24);
+  --warning-soft: light-dark(#fffbeb, #2a1f0a);
+  --danger: light-dark(#b91c1c, #f87171);
+  --danger-soft: light-dark(#fef2f2, #2c1515);
+  --ring: light-dark(#18181b, #fafaf9);
+  --radius: 0.75rem;
+  /* No class follows the OS; app/layout.tsx sets .light or .dark from the
+     theme cookie when the user has picked one. */
+  color-scheme: light dark;
+}
+
+:root.light {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 0.25rem);
+  --radius-sm: calc(var(--radius) - 0.375rem);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.font-mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@keyframes fitcheck-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fitcheck-fade-up 0.35s ease-out both;
+}
+
+@keyframes fitcheck-pulse-bar {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.animate-progress-shimmer {
+  background-size: 200% 100%;
+  animation: fitcheck-pulse-bar 1.4s linear infinite;
+}
