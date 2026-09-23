@@ -7,12 +7,18 @@ import { JdResumeForm } from "@/components/evaluate/jd-resume-form";
 import { EvaluationStatus } from "@/components/evaluation/evaluation-status";
 import { ResultsTabs } from "@/components/results/results-tabs";
 import { Button } from "@/components/ui/button";
+import { ResizeHandle, usePersistentSize } from "@/components/ui/resize-handle";
 import type { EvaluateStreamEvent, EvaluationRecord } from "@/types/evaluation-record";
 
 interface ConfigStatus {
   claudeConfigured: boolean;
   jevConfigured: boolean;
 }
+
+/** Form pane width as a % of the workspace, from lg up. */
+const FORM_DEFAULT_PERCENT = 50;
+const FORM_MIN_PERCENT = 25;
+const FORM_MAX_PERCENT = 75;
 
 interface EvaluationWorkspaceProps {
   initialRecord?: EvaluationRecord;
@@ -29,6 +35,11 @@ export function EvaluationWorkspace({ initialRecord }: EvaluationWorkspaceProps)
   const [record, setRecord] = React.useState<EvaluationRecord | null>(initialRecord ?? null);
   const [config, setConfig] = React.useState<ConfigStatus | null>(null);
   const resultsRef = React.useRef<HTMLDivElement>(null);
+  const workspaceRef = React.useRef<HTMLDivElement>(null);
+  const [formPercent, setFormPercent] = usePersistentSize(
+    "resumefit:form-pane-percent",
+    FORM_DEFAULT_PERCENT,
+  );
 
   // Below lg the two panes stack, so the results sit under the form — bring
   // them into view when there's something to show.
@@ -77,8 +88,22 @@ export function EvaluationWorkspace({ initialRecord }: EvaluationWorkspaceProps)
   }, [jobDescription, resume, router, scrollToResults]);
 
   return (
-    <div className="grid flex-1 grid-cols-1 bg-[var(--card)] lg:min-h-0 lg:grid-cols-2">
-      <div className="flex flex-col border-b border-[var(--border)] lg:min-h-0 lg:overflow-hidden lg:border-r lg:border-b-0">
+    <div
+      ref={workspaceRef}
+      className="grid flex-1 grid-cols-1 bg-[var(--card)] lg:min-h-0 lg:grid-cols-[var(--form-w)_minmax(0,1fr)]"
+      style={{ "--form-w": `${formPercent}%` } as React.CSSProperties}
+    >
+      <div className="relative flex flex-col border-b border-[var(--border)] lg:min-h-0 lg:border-r lg:border-b-0">
+        <ResizeHandle
+          label="Resize form and results panes"
+          value={formPercent}
+          min={FORM_MIN_PERCENT}
+          max={FORM_MAX_PERCENT}
+          defaultValue={FORM_DEFAULT_PERCENT}
+          onChange={setFormPercent}
+          pxToUnit={(px) => (px / (workspaceRef.current?.clientWidth || 1)) * 100}
+          className="hidden lg:block"
+        />
         <div className="flex-1 p-4 sm:p-6 lg:min-h-0 lg:overflow-y-auto">
           <JdResumeForm
             jobDescription={jobDescription}

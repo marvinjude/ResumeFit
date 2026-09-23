@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ResizeHandle, usePersistentSize } from "@/components/ui/resize-handle";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { cn } from "@/lib/utils";
 import type { Theme } from "@/lib/theme";
@@ -24,6 +25,10 @@ interface HistorySidebarProps {
   evaluations: EvaluationSummary[];
   theme: Theme;
 }
+
+const SIDEBAR_DEFAULT_WIDTH = 288;
+const SIDEBAR_MIN_WIDTH = 200;
+const SIDEBAR_MAX_WIDTH = 480;
 
 const LINKEDIN_URL = "https://www.linkedin.com/in/jude-agboola/";
 
@@ -44,6 +49,7 @@ export function HistorySidebar({ evaluations, theme }: HistorySidebarProps) {
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [recentOpen, setRecentOpen] = React.useState(true);
+  const [width, setWidth] = usePersistentSize("resumefit:sidebar-width", SIDEBAR_DEFAULT_WIDTH);
 
   const toggleCollapsed = React.useCallback(() => {
     setCollapsed((prev) => !prev);
@@ -109,11 +115,21 @@ export function HistorySidebar({ evaluations, theme }: HistorySidebarProps) {
     <div
       className={cn(
         "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-[var(--border)] bg-[var(--muted)] shadow-xl transition-[transform,visibility] duration-200",
-        "md:static md:z-auto md:h-full md:max-w-none md:shrink-0 md:translate-x-0 md:bg-[var(--muted)]/60 md:shadow-none md:transition-none",
+        "md:relative md:z-auto md:h-full md:w-[var(--sidebar-w)] md:max-w-none md:shrink-0 md:translate-x-0 md:bg-[var(--muted)]/60 md:shadow-none md:transition-none",
         !mobileOpen && "max-md:invisible max-md:-translate-x-full",
         collapsed && "md:hidden",
       )}
+      style={{ "--sidebar-w": `${width}px` } as React.CSSProperties}
     >
+      <ResizeHandle
+        label="Resize sidebar"
+        value={width}
+        min={SIDEBAR_MIN_WIDTH}
+        max={SIDEBAR_MAX_WIDTH}
+        defaultValue={SIDEBAR_DEFAULT_WIDTH}
+        onChange={setWidth}
+        className="hidden md:block"
+      />
       <div className="flex items-center justify-between border-b border-[var(--border)] p-3">
         <Link href="/" onClick={closeMobile} className="flex min-w-0 items-center">
           <span className="truncate text-lg font-semibold tracking-tight">
