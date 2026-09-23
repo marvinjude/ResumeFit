@@ -30,6 +30,8 @@ export interface EvaluationRecord {
   jevResponse: JevDecisionResponse;
   metricResults: MetricResult[];
   overallScore: number;
+  /** ISO timestamp set when the user archives it; absent when active. */
+  archivedAt?: string;
   persisted: boolean;
 }
 

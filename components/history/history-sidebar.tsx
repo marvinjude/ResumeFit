@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Archive,
+  ArchiveRestore,
   ChevronDown,
   Menu,
   PanelLeftClose,
@@ -13,6 +14,7 @@ import {
   Search,
   X,
 } from "lucide-react";
+import { setArchived } from "@/app/actions/archive";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResizeHandle, usePersistentSize } from "@/components/ui/resize-handle";
@@ -23,6 +25,7 @@ import type { EvaluationSummary } from "@/types/evaluation-record";
 
 interface HistorySidebarProps {
   evaluations: EvaluationSummary[];
+  archivedEvaluations: EvaluationSummary[];
   theme: Theme;
 }
 
@@ -40,8 +43,9 @@ function LinkedinIcon({ className }: { className?: string }) {
   );
 }
 
-export function HistorySidebar({ evaluations, theme }: HistorySidebarProps) {
+export function HistorySidebar({ evaluations, archivedEvaluations, theme }: HistorySidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = React.useState(false);
   // Below md the sidebar is an off-canvas drawer opened from a top bar;
   // `collapsed` (the icon rail) only applies from md up.
@@ -49,6 +53,8 @@ export function HistorySidebar({ evaluations, theme }: HistorySidebarProps) {
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [recentOpen, setRecentOpen] = React.useState(true);
+  const [archivedOpen, setArchivedOpen] = React.useState(false);
+  const [pendingId, setPendingId] = React.useState<string | null>(null);
   const [width, setWidth] = usePersistentSize("resumefit:sidebar-width", SIDEBAR_DEFAULT_WIDTH);
 
   const toggleCollapsed = React.useCallback(() => {
@@ -66,15 +72,53 @@ export function HistorySidebar({ evaluations, theme }: HistorySidebarProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mobileOpen]);
 
-  const filtered = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return evaluations;
-    return evaluations.filter(
-      (e) =>
+  const matchesQuery = React.useCallback(
+    (e: EvaluationSummary) => {
+      const q = query.trim().toLowerCase();
+      return (
+        !q ||
         e.jobTitleGuess.toLowerCase().includes(q) ||
-        e.resumeTitleGuess.toLowerCase().includes(q),
+        e.resumeTitleGuess.toLowerCase().includes(q)
+      );
+    },
+    [query],
+  );
+  const filtered = React.useMemo(() => evaluations.filter(matchesQuery), [evaluations, matchesQuery]);
+  const filteredArchived = React.useMemo(
+    () => archivedEvaluations.filter(matchesQuery),
+    [archivedEvaluations, matchesQuery],
+  );
+
+  const toggleArchived = React.useCallback(
+    async (id: string, archived: boolean) => {
+      setPendingId(id);
+      try {
+        await setArchived(id, archived);
+        // Archiving the open evaluation moves you on to a fresh form, the
+        // same as it leaving the Recent list.
+        if (archived && pathname === `/evaluations/${id}`) router.push("/");
+      } finally {
+        setPendingId(null);
+      }
+    },
+    [pathname, router],
+  );
+
+  const renderItem = (evaluation: EvaluationSummary, archived: boolean) => {
+    const href = `/evaluations/${evaluation.id}`;
+    return (
+      <HistoryItem
+        key={evaluation.id}
+        evaluation={evaluation}
+        href={href}
+        active={pathname === href}
+        archived={archived}
+        pending={pendingId === evaluation.id}
+        onNavigate={closeMobile}
+        onToggleArchived={() => toggleArchived(evaluation.id, !archived)}
+      />
     );
-  }, [evaluations, query]);
+  };
 
   const rail = (
     <div className="hidden h-full w-14 shrink-0 flex-col items-center gap-2 border-r border-[var(--border)] bg-[var(--muted)]/60 py-3 md:flex">
@@ -224,34 +268,34 @@ export function HistorySidebar({ evaluations, theme }: HistorySidebarProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-0.5">
-            {filtered.map((evaluation) => {
-              const href = `/evaluations/${evaluation.id}`;
-              const active = pathname === href;
-              return (
-                <Link
-                  key={evaluation.id}
-                  href={href}
-                  onClick={closeMobile}
-                  className={cn(
-                    "flex flex-col gap-0.5 rounded-md px-3 py-2 text-left transition-colors",
-                    active ? "bg-[var(--card)]" : "hover:bg-[var(--card)]/70",
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium">
-                      {evaluation.jobTitleGuess}
-                    </span>
-                    <span className="shrink-0 text-xs font-semibold text-[var(--muted-foreground)]">
-                      {evaluation.overallScore}%
-                    </span>
-                  </div>
-                  <span className="truncate text-xs text-[var(--muted-foreground)]">
-                    {evaluation.resumeTitleGuess}
-                  </span>
-                </Link>
-              );
-            })}
+            {filtered.map((evaluation) => renderItem(evaluation, false))}
           </div>
+        )}
+
+        {archivedEvaluations.length > 0 && (
+          <>
+            <button
+              onClick={() => setArchivedOpen((v) => !v)}
+              aria-expanded={archivedOpen}
+              className="mt-3 flex w-full items-center gap-1 rounded-md px-3 pb-1 pt-1 text-[11px] font-medium uppercase tracking-wide text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+            >
+              <ChevronDown
+                className={cn("h-3.5 w-3.5 transition-transform", !archivedOpen && "-rotate-90")}
+              />
+              Archived
+              <span className="ml-auto font-normal normal-case">{archivedEvaluations.length}</span>
+            </button>
+            {archivedOpen &&
+              (filteredArchived.length === 0 ? (
+                <p className="px-3 py-4 text-center text-xs text-[var(--muted-foreground)]">
+                  No matches.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-0.5">
+                  {filteredArchived.map((evaluation) => renderItem(evaluation, true))}
+                </div>
+              ))}
+          </>
         )}
       </div>
 
@@ -311,5 +355,61 @@ export function HistorySidebar({ evaluations, theme }: HistorySidebarProps) {
       {collapsed && rail}
       {drawer}
     </>
+  );
+}
+
+interface HistoryItemProps {
+  evaluation: EvaluationSummary;
+  href: string;
+  active: boolean;
+  archived: boolean;
+  pending: boolean;
+  onNavigate: () => void;
+  onToggleArchived: () => void;
+}
+
+/** One sidebar entry. The archive/restore button replaces the score on
+ * hover or focus (always visible on touch-sized screens). */
+function HistoryItem({
+  evaluation,
+  href,
+  active,
+  archived,
+  pending,
+  onNavigate,
+  onToggleArchived,
+}: HistoryItemProps) {
+  const ActionIcon = archived ? ArchiveRestore : Archive;
+  const actionLabel = archived ? "Unarchive evaluation" : "Archive evaluation";
+
+  return (
+    <div className={cn("group relative", pending && "pointer-events-none opacity-50")}>
+      <Link
+        href={href}
+        onClick={onNavigate}
+        className={cn(
+          "flex flex-col gap-0.5 rounded-md px-3 py-2 pr-10 text-left transition-colors",
+          active ? "bg-[var(--card)]" : "hover:bg-[var(--card)]/70",
+          archived && "text-[var(--muted-foreground)]",
+        )}
+      >
+        <span className="truncate text-sm font-medium">{evaluation.jobTitleGuess}</span>
+        <span className="truncate text-xs text-[var(--muted-foreground)]">
+          {evaluation.resumeTitleGuess}
+        </span>
+      </Link>
+      <span className="pointer-events-none absolute right-3 top-2 text-xs font-semibold text-[var(--muted-foreground)] group-focus-within:invisible group-hover:invisible max-md:invisible">
+        {evaluation.overallScore}%
+      </span>
+      <button
+        type="button"
+        onClick={onToggleArchived}
+        aria-label={actionLabel}
+        title={archived ? "Unarchive" : "Archive"}
+        className="invisible absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)] hover:text-[var(--foreground)] focus-visible:visible group-focus-within:visible group-hover:visible max-md:visible"
+      >
+        <ActionIcon className="h-3.5 w-3.5" />
+      </button>
+    </div>
   );
 }
