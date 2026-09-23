@@ -66,7 +66,7 @@ export interface ResolvedMatchLevel {
 
 /** Reads Jev's answer to the static match-level question out of a raw
  * answers map. Returns null if the answer is missing/malformed (e.g. an
- * older simulated response, or an unexpected choice) rather than throwing —
+ * older response, or an unexpected choice) rather than throwing —
  * callers fall back to the numeric scoreTier() in that case. */
 export function resolveMatchLevel(
   answers: Record<string, JevAnswer>,

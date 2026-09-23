@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callJev, isJevConfigured, JevClientError } from "@/lib/jev/client";
-import { simulateJevResponse } from "@/lib/jev/simulate";
 import { buildResumeJevRequest } from "@/lib/jev/build-request";
 import { generateScoringObject, ClaudeScoringError } from "@/lib/claude/generate-scoring-object";
 import { isClaudeConfigured } from "@/lib/claude/client";
@@ -52,6 +51,12 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
+  if (!isJevConfigured()) {
+    return NextResponse.json(
+      { error: "JEV_API_KEY is not configured on the server." },
+      { status: 500 },
+    );
+  }
 
   const sessionId = await ensureSessionId();
 
@@ -73,13 +78,10 @@ export async function POST(req: NextRequest) {
   }
 
   const jevRequest = buildResumeJevRequest(scoringObject, resume);
-  const simulated = !isJevConfigured();
 
   let jevResponse;
   try {
-    jevResponse = simulated
-      ? simulateJevResponse(scoringObject, resume)
-      : await callJev(jevRequest);
+    jevResponse = await callJev(jevRequest);
   } catch (err) {
     console.error("Jev evaluation failed", err);
     const message =
@@ -106,7 +108,6 @@ export async function POST(req: NextRequest) {
     matchLevel,
     metricResults,
     overallScore,
-    simulated,
   };
 
   let id: string;

@@ -44,7 +44,6 @@ export function ScoringSummary({ record }: ScoringSummaryProps) {
           </Badge>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          {record.simulated && <Badge variant="warning">Demo Mode</Badge>}
           {!record.persisted && <Badge variant="outline">Not saved</Badge>}
         </div>
       </div>

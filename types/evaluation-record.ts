@@ -34,7 +34,6 @@ export interface EvaluationRecord {
   matchLevel: ResolvedMatchLevel | null;
   metricResults: MetricResult[];
   overallScore: number;
-  simulated: boolean;
   persisted: boolean;
 }
 
@@ -42,7 +41,6 @@ export interface EvaluationSummary {
   id: string;
   createdAt: string;
   overallScore: number;
-  simulated: boolean;
   jobTitleGuess: string;
   resumeTitleGuess: string;
 }

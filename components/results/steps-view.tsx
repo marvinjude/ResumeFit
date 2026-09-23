@@ -110,19 +110,11 @@ export function StepsView({ record }: StepsViewProps) {
       <Step
         n={2}
         title="Score resume against rubric"
-        badge={record.simulated ? record.jevResponse.model : JEV_MODEL}
-        usage={
-          <UsageLine
-            model={JEV_MODEL}
-            usage={record.jevResponse.usage}
-            simulated={record.simulated}
-          />
-        }
+        badge={JEV_MODEL}
+        usage={<UsageLine model={JEV_MODEL} usage={record.jevResponse.usage} />}
       >
         <p className="text-sm text-[var(--muted-foreground)]">
-          {record.simulated
-            ? "Demo Mode fixtures stood in for Jev (JEV_API_KEY not configured)."
-            : "Jev answered each metric independently in one call."}
+          Jev answered each metric independently in one call.
         </p>
         <CodeLabel>Code</CodeLabel>
         <CodeBlock code={JEV_CALL_CODE} language="typescript" />
@@ -148,19 +140,10 @@ export function StepsView({ record }: StepsViewProps) {
   );
 }
 
-function UsageLine({
-  model,
-  usage,
-  simulated = false,
-}: {
-  model: string;
-  usage?: TokenUsage;
-  /** Demo Mode fixtures — nothing was billed. */
-  simulated?: boolean;
-}) {
+function UsageLine({ model, usage }: { model: string; usage?: TokenUsage }) {
   if (!usage) return <UsageText>Token usage not recorded for this evaluation.</UsageText>;
   const cached = (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0);
-  const cost = simulated ? 0 : computeCost(model, usage);
+  const cost = computeCost(model, usage);
   return (
     <UsageText>
       {(usage.input_tokens + cached).toLocaleString()} input

@@ -44,7 +44,6 @@ export async function listRecentEvaluations(
       _id: ObjectId;
       createdAt: string;
       overallScore: number;
-      simulated: boolean;
       jobDescription: string;
       resume: string;
     }>({
@@ -52,7 +51,6 @@ export async function listRecentEvaluations(
       resume: 1,
       createdAt: 1,
       overallScore: 1,
-      simulated: 1,
     })
     .toArray();
 
@@ -60,7 +58,6 @@ export async function listRecentEvaluations(
     id: doc._id.toString(),
     createdAt: doc.createdAt,
     overallScore: doc.overallScore,
-    simulated: doc.simulated,
     jobTitleGuess: guessTitle(doc.jobDescription),
     resumeTitleGuess: guessTitle(doc.resume),
   }));

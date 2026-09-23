@@ -231,7 +231,6 @@ export function HistorySidebar({ evaluations, theme }: HistorySidebarProps) {
                   </div>
                   <span className="truncate text-xs text-[var(--muted-foreground)]">
                     {evaluation.resumeTitleGuess}
-                    {evaluation.simulated ? " · Demo" : ""}
                   </span>
                 </Link>
               );

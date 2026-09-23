@@ -84,6 +84,7 @@ export function EvaluationWorkspace({ initialRecord }: EvaluationWorkspaceProps)
             onSubmit={evaluate}
             submitting={status === "running"}
             claudeConfigured={config?.claudeConfigured ?? null}
+            jevConfigured={config?.jevConfigured ?? null}
             hasResult={record !== null}
           />
         </div>

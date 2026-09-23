@@ -40,9 +40,4 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-If `JEV_API_KEY` isn't set, ResumeFit runs Jev calls in **Demo Mode**: a
-deterministic fixture generator (`lib/jev/simulate.ts`) stands in for Jev
-so the rest of the flow still works end to end. Every simulated result is
-labeled as such in the UI. `CLAUDE_API_KEY` has no fallback — it's
-required to generate a scoring rubric at all.
 

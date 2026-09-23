@@ -17,6 +17,7 @@ interface JdResumeFormProps {
   onSubmit: () => void;
   submitting: boolean;
   claudeConfigured: boolean | null;
+  jevConfigured: boolean | null;
   hasResult: boolean;
 }
 
@@ -28,13 +29,15 @@ export function JdResumeForm({
   onSubmit,
   submitting,
   claudeConfigured,
+  jevConfigured,
   hasResult,
 }: JdResumeFormProps) {
   const canSubmit =
     jobDescription.trim().length > 0 &&
     resume.trim().length > 0 &&
     !submitting &&
-    claudeConfigured !== false;
+    claudeConfigured !== false &&
+    jevConfigured !== false;
 
   return (
     <div className="flex h-full flex-col gap-6 lg:min-h-[480px]">
@@ -84,6 +87,12 @@ export function JdResumeForm({
         <p className="shrink-0 text-xs text-[var(--danger)]">
           CLAUDE_API_KEY is not configured on the server, so a scoring rubric
           can&apos;t be generated. Set it in .env and restart the server.
+        </p>
+      )}
+      {jevConfigured === false && (
+        <p className="shrink-0 text-xs text-[var(--danger)]">
+          JEV_API_KEY is not configured on the server, so the resume can&apos;t be
+          scored. Set it in .env and restart the server.
         </p>
       )}
 
