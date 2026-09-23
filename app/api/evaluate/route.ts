@@ -12,6 +12,7 @@ import { MAX_TEXT_LENGTH } from "@/lib/config";
 import { generateId } from "@/lib/utils";
 import type { EvaluationRecord } from "@/types/evaluation-record";
 import type { LlmRequestInfo } from "@/lib/claude/generate-scoring-object";
+import type { TokenUsage } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 
@@ -56,10 +57,12 @@ export async function POST(req: NextRequest) {
 
   let scoringObject;
   let llmRequest: LlmRequestInfo;
+  let llmUsage: TokenUsage;
   try {
     const result = await generateScoringObject(jobDescription);
     scoringObject = result.scoringObject;
     llmRequest = result.request;
+    llmUsage = result.usage;
   } catch (err) {
     console.error("Claude scoring rubric generation failed", err);
     const message =
@@ -96,6 +99,7 @@ export async function POST(req: NextRequest) {
     jobDescription,
     resume,
     llmRequest,
+    llmUsage,
     scoringObject,
     jevRequest,
     jevResponse,

@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/results/code-block";
 import { SAMPLE_SHAPE } from "@/lib/claude/sample-shape";
+import { JEV_MODEL } from "@/lib/jev/model";
+import { computeCost, formatCost, type TokenUsage } from "@/lib/pricing";
 import type { EvaluationRecord } from "@/types/evaluation-record";
 
 interface StepsViewProps {
@@ -42,7 +44,7 @@ const res = await fetch("https://api.typesafe.ai/v1/systemone", {
     Authorization: \`Bearer \${process.env.JEV_API_KEY}\`,
     "Content-Type": "application/json",
   },
-  body: JSON.stringify({ model: "jev-latest", ...request }),
+  body: JSON.stringify({ model: JEV_MODEL, ...request }),
   signal: controller.signal, // 20s timeout
 });
 
@@ -65,7 +67,12 @@ function computeOverallScore(metricResults) {
 export function StepsView({ record }: StepsViewProps) {
   return (
     <div className="flex flex-col gap-6">
-      <Step n={1} title="Generate scoring rubric" badge={record.llmRequest.llmModelKey}>
+      <Step
+        n={1}
+        title="Generate scoring rubric"
+        badge={record.llmRequest.llmModelKey}
+        usage={<UsageLine model={record.llmRequest.llmModelKey} usage={record.llmUsage} />}
+      >
         <p className="text-sm text-[var(--muted-foreground)]">
           Based on the job description, an LLM generated {record.metricResults.length} metrics
           tailored to this specific role — including each metric&apos;s weight, which the LLM
@@ -100,13 +107,22 @@ export function StepsView({ record }: StepsViewProps) {
         <CodeBlock code={json(record.scoringObject)} language="json" />
       </Step>
 
-      <Step n={2} title="Score resume against rubric" badge={record.jevResponse.model}>
+      <Step
+        n={2}
+        title="Score resume against rubric"
+        badge={record.simulated ? record.jevResponse.model : JEV_MODEL}
+        usage={
+          <UsageLine
+            model={JEV_MODEL}
+            usage={record.jevResponse.usage}
+            simulated={record.simulated}
+          />
+        }
+      >
         <p className="text-sm text-[var(--muted-foreground)]">
           {record.simulated
             ? "Demo Mode fixtures stood in for Jev (JEV_API_KEY not configured)."
-            : "Jev answered each metric independently in one call."}{" "}
-          Usage: {record.jevResponse.usage.input_tokens.toLocaleString()} input /{" "}
-          {record.jevResponse.usage.output_tokens.toLocaleString()} output tokens.
+            : "Jev answered each metric independently in one call."}
         </p>
         <CodeLabel>Code</CodeLabel>
         <CodeBlock code={JEV_CALL_CODE} language="typescript" />
@@ -132,6 +148,35 @@ export function StepsView({ record }: StepsViewProps) {
   );
 }
 
+function UsageLine({
+  model,
+  usage,
+  simulated = false,
+}: {
+  model: string;
+  usage?: TokenUsage;
+  /** Demo Mode fixtures — nothing was billed. */
+  simulated?: boolean;
+}) {
+  if (!usage) return <UsageText>Token usage not recorded for this evaluation.</UsageText>;
+  const cached = (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0);
+  const cost = simulated ? 0 : computeCost(model, usage);
+  return (
+    <UsageText>
+      {(usage.input_tokens + cached).toLocaleString()} input
+      {cached > 0 && ` (${(usage.cache_read_input_tokens ?? 0).toLocaleString()} cached)`} ·{" "}
+      {usage.output_tokens.toLocaleString()} output ·{" "}
+      <span className="font-medium text-[var(--foreground)]">
+        {cost === null ? "cost unknown" : formatCost(cost)}
+      </span>
+    </UsageText>
+  );
+}
+
+function UsageText({ children }: { children: React.ReactNode }) {
+  return <p className="font-mono text-[11px] text-[var(--muted-foreground)]">{children}</p>;
+}
+
 function CodeLabel({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
@@ -144,11 +189,13 @@ function Step({
   n,
   title,
   badge,
+  usage,
   children,
 }: {
   n: number;
   title: string;
   badge?: string;
+  usage?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -165,6 +212,7 @@ function Step({
             </Badge>
           )}
         </div>
+        {usage}
         {children}
       </div>
     </div>

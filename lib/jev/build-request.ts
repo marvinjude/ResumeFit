@@ -1,6 +1,7 @@
 import type { JevDecisionRequest, JevQuestion } from "@/types/evaluation";
 import type { MetricInstructions, ScoringObject } from "@/types/scoring";
 import { MATCH_LEVEL_KEY, MATCH_LEVEL_QUESTION } from "@/lib/scoring/match-level";
+import { JEV_MODEL } from "@/lib/jev/model";
 
 /**
  * Jev questions only accept a plain instructions string, so a date-relative
@@ -49,7 +50,7 @@ export function buildResumeJevRequest(
 ): JevDecisionRequest {
   return {
     state: buildResumeMatchState(resume),
-    model: "jev-latest",
+    model: JEV_MODEL,
     questions: {
       ...scoringObjectToJevQuestions(scoringObject),
       [MATCH_LEVEL_KEY]: MATCH_LEVEL_QUESTION,

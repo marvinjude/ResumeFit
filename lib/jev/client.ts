@@ -1,4 +1,5 @@
 import "server-only";
+import { JEV_MODEL } from "@/lib/jev/model";
 import type { JevDecisionRequest, JevDecisionResponse } from "@/types/evaluation";
 
 /**
@@ -10,7 +11,6 @@ import type { JevDecisionRequest, JevDecisionResponse } from "@/types/evaluation
  * "server-only" import above).
  */
 const JEV_ENDPOINT = "https://api.typesafe.ai/v1/systemone";
-const JEV_MODEL = "jev-latest";
 const REQUEST_TIMEOUT_MS = 20000;
 
 export class JevClientError extends Error {

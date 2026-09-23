@@ -12,6 +12,7 @@ import { CLAUDE_MODEL, getAnthropicClient } from "@/lib/claude/client";
 import { ScoringObjectSchema, type ScoringObject } from "@/lib/claude/scoring-schema";
 import { ScoringWireSchema, wireToScoringObject } from "@/lib/claude/scoring-wire-schema";
 import { SAMPLE_SHAPE } from "@/lib/claude/sample-shape";
+import { addUsage, type TokenUsage } from "@/lib/pricing";
 
 export class ClaudeScoringError extends Error {
   cause?: unknown;
@@ -115,7 +116,7 @@ function mapApiError(err: APIError): ClaudeScoringError {
 
 export async function generateScoringObject(
   jobDescription: string,
-): Promise<{ scoringObject: ScoringObject; request: LlmRequestInfo }> {
+): Promise<{ scoringObject: ScoringObject; request: LlmRequestInfo; usage: TokenUsage }> {
   const client = getAnthropicClient();
   const today = new Date().toISOString().slice(0, 10);
   const userPrompt = buildUserPrompt(jobDescription, today);
@@ -129,13 +130,16 @@ export async function generateScoringObject(
     messages: baseMessages,
   };
 
+  // Summed across the first attempt and the retry, since both are billed.
+  let usage: TokenUsage = { input_tokens: 0, output_tokens: 0 };
   let firstAttemptError: string;
   try {
     const message = await requestScoringObject(client, baseMessages);
+    usage = addUsage(usage, message.usage);
     if (message.parsed_output) {
       const result = toScoringObject(message.parsed_output);
       if (result.success) {
-        return { scoringObject: result.data, request };
+        return { scoringObject: result.data, request, usage };
       }
       firstAttemptError = z.prettifyError(result.error);
     } else {
@@ -158,10 +162,11 @@ export async function generateScoringObject(
         content: `Your previous response didn't match the required rubric schema: ${firstAttemptError}. Please try again.`,
       },
     ]);
+    usage = addUsage(usage, retryMessage.usage);
     if (retryMessage.parsed_output) {
       const result = toScoringObject(retryMessage.parsed_output);
       if (result.success) {
-        return { scoringObject: result.data, request };
+        return { scoringObject: result.data, request, usage };
       }
       throw new ClaudeScoringError(
         `Claude's scoring rubric failed validation twice: ${z.prettifyError(result.error)}`,
