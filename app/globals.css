@@ -34,8 +34,8 @@
   --danger-soft: light-dark(#fef2f2, #2c1515);
   --ring: light-dark(#18181b, #fafaf9);
   --radius: 0.75rem;
-  /* No class follows the OS; app/layout.tsx sets .light or .dark from the
-     theme cookie when the user has picked one. */
+  /* No class follows the OS (the "system" choice); app/layout.tsx sets
+     .light (the default) or .dark from the theme cookie. */
   color-scheme: light dark;
 }
 

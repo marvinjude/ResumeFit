@@ -25,12 +25,10 @@ function getTheme(): Theme {
 function setTheme(theme: Theme) {
   const { classList } = document.documentElement;
   classList.remove("light", "dark");
-  if (theme === "system") {
-    document.cookie = `${THEME_COOKIE}=; path=/; max-age=0`;
-  } else {
-    classList.add(theme);
-    document.cookie = `${THEME_COOKIE}=${theme}; path=/; max-age=${ONE_YEAR_SECONDS}; samesite=lax`;
-  }
+  if (theme !== "system") classList.add(theme);
+  // Always stored — with no cookie the app defaults to light, so "system"
+  // has to be remembered explicitly.
+  document.cookie = `${THEME_COOKIE}=${theme}; path=/; max-age=${ONE_YEAR_SECONDS}; samesite=lax`;
   listeners.forEach((l) => l());
 }
 
