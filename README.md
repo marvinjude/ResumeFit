@@ -1,5 +1,8 @@
 # ResumeFit
 
+<img width="1511" height="950" alt="resumefit" src="https://github.com/user-attachments/assets/5b8b0284-6a0e-45de-a340-3ae665dda61a" />
+
+
 ResumeFit scores a candidate's resume against a job description. Claude
 reads the job description and designs a tailored scoring rubric; [Jev](https://docs.typesafe.ai)
 judges the resume against that rubric with calibrated, bounded answers;
