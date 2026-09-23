@@ -1,6 +1,5 @@
 import type { JevDecisionRequest, JevQuestion } from "@/types/evaluation";
 import type { MetricInstructions, ScoringObject } from "@/types/scoring";
-import { MATCH_LEVEL_KEY, MATCH_LEVEL_QUESTION } from "@/lib/scoring/match-level";
 import { JEV_MODEL } from "@/lib/jev/model";
 
 /**
@@ -51,9 +50,6 @@ export function buildResumeJevRequest(
   return {
     state: buildResumeMatchState(resume),
     model: JEV_MODEL,
-    questions: {
-      ...scoringObjectToJevQuestions(scoringObject),
-      [MATCH_LEVEL_KEY]: MATCH_LEVEL_QUESTION,
-    },
+    questions: scoringObjectToJevQuestions(scoringObject),
   };
 }

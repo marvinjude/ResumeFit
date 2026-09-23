@@ -15,14 +15,7 @@ export function ScoringSummary({ record }: ScoringSummaryProps) {
     .filter((m) => m.contributesToScore)
     .sort((a, b) => b.weight - a.weight);
   const descriptiveMetrics = record.metricResults.filter((m) => !m.contributesToScore);
-  // Jev's own holistic judgment (a static metric in every call) is the
-  // primary source for the match-level label — the numeric scoreTier() is
-  // only a fallback for older records that predate that metric.
-  const fallbackTier = scoreTier(record.overallScore);
-  const matchLevel = record.matchLevel ?? {
-    label: fallbackTier.label,
-    variant: fallbackTier.variant,
-  };
+  const matchLevel = scoreTier(record.overallScore);
 
   return (
     <div className="flex flex-col gap-6">

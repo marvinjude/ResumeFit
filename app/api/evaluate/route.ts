@@ -4,7 +4,6 @@ import { buildResumeJevRequest } from "@/lib/jev/build-request";
 import { generateScoringObject, ClaudeScoringError } from "@/lib/claude/generate-scoring-object";
 import { isClaudeConfigured } from "@/lib/claude/client";
 import { computeMetricResults, computeOverallScore } from "@/lib/scoring/compute-score";
-import { resolveMatchLevel } from "@/lib/scoring/match-level";
 import { insertEvaluation } from "@/lib/mongo/evaluations-repo";
 import { ensureSessionId } from "@/lib/session/session";
 import { MAX_TEXT_LENGTH } from "@/lib/config";
@@ -93,7 +92,6 @@ export async function POST(req: NextRequest) {
 
   const metricResults = computeMetricResults(scoringObject, jevResponse.answers);
   const overallScore = computeOverallScore(metricResults);
-  const matchLevel = resolveMatchLevel(jevResponse.answers);
 
   const recordToStore = {
     sessionId,
@@ -105,7 +103,6 @@ export async function POST(req: NextRequest) {
     scoringObject,
     jevRequest,
     jevResponse,
-    matchLevel,
     metricResults,
     overallScore,
   };
