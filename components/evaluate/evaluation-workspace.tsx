@@ -7,7 +7,7 @@ import { JdResumeForm } from "@/components/evaluate/jd-resume-form";
 import { EvaluationStatus } from "@/components/evaluation/evaluation-status";
 import { ResultsTabs } from "@/components/results/results-tabs";
 import { Button } from "@/components/ui/button";
-import type { EvaluationRecord } from "@/types/evaluation-record";
+import type { EvaluateStreamEvent, EvaluationRecord } from "@/types/evaluation-record";
 
 interface ConfigStatus {
   claudeConfigured: boolean;
@@ -25,6 +25,7 @@ export function EvaluationWorkspace({ initialRecord }: EvaluationWorkspaceProps)
   const [resume, setResume] = React.useState(initialRecord?.resume ?? "");
   const [status, setStatus] = React.useState<"idle" | "running" | "error">("idle");
   const [error, setError] = React.useState<string | null>(null);
+  const [step, setStep] = React.useState(0);
   const [record, setRecord] = React.useState<EvaluationRecord | null>(initialRecord ?? null);
   const [config, setConfig] = React.useState<ConfigStatus | null>(null);
   const resultsRef = React.useRef<HTMLDivElement>(null);
@@ -51,17 +52,20 @@ export function EvaluationWorkspace({ initialRecord }: EvaluationWorkspaceProps)
     setStatus("running");
     setError(null);
     scrollToResults("smooth");
+    setStep(0);
     try {
       const res = await fetch("/api/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobDescription, resume }),
       });
-      const data = await res.json();
-      if (!res.ok) {
+      // Request validation / config errors come back as a plain JSON error
+      // before the stream starts.
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? "Something went wrong while evaluating.");
       }
-      const newRecord = data.record as EvaluationRecord;
+      const newRecord = await readEvaluationStream(res.body, setStep);
       setRecord(newRecord);
       setStatus("idle");
       router.push(`/evaluations/${newRecord.id}`);
@@ -97,7 +101,7 @@ export function EvaluationWorkspace({ initialRecord }: EvaluationWorkspaceProps)
         <div className="flex min-h-56 flex-1 flex-col px-4 pb-4 sm:px-6 sm:pb-6 lg:min-h-0 lg:overflow-y-auto">
           {status === "running" ? (
             <div className="flex flex-1 items-center justify-center">
-              <EvaluationStatus />
+              <EvaluationStatus step={step} />
             </div>
           ) : status === "error" ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
@@ -122,4 +126,29 @@ export function EvaluationWorkspace({ initialRecord }: EvaluationWorkspaceProps)
       </div>
     </div>
   );
+}
+
+/** Reads the NDJSON event stream from POST /api/evaluate, reporting each
+ * stage as the server starts it, and resolves with the final record. */
+async function readEvaluationStream(
+  body: ReadableStream<Uint8Array>,
+  onStep: (step: number) => void,
+): Promise<EvaluationRecord> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = done ? "" : (lines.pop() ?? "");
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const event = JSON.parse(line) as EvaluateStreamEvent;
+      if (event.type === "step") onStep(event.step);
+      else if (event.type === "result") return event.record;
+      else throw new Error(event.error);
+    }
+    if (done) throw new Error("The evaluation ended unexpectedly. Please try again.");
+  }
 }

@@ -8,7 +8,7 @@ import { insertEvaluation } from "@/lib/mongo/evaluations-repo";
 import { ensureSessionId } from "@/lib/session/session";
 import { MAX_TEXT_LENGTH } from "@/lib/config";
 import { generateId } from "@/lib/utils";
-import type { EvaluationRecord } from "@/types/evaluation-record";
+import type { EvaluateStreamEvent, EvaluationRecord } from "@/types/evaluation-record";
 import type { LlmRequestInfo } from "@/lib/claude/generate-scoring-object";
 import type { TokenUsage } from "@/lib/pricing";
 
@@ -59,6 +59,40 @@ export async function POST(req: NextRequest) {
 
   const sessionId = await ensureSessionId();
 
+  // The response is a stream of newline-delimited JSON events so the client
+  // can tick off each pipeline stage as it actually starts, rather than
+  // guessing: {type:"step",step}, then {type:"result",record} or
+  // {type:"error",error}.
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: EvaluateStreamEvent) =>
+        controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+      try {
+        send({ type: "result", record: await runEvaluation(jobDescription, resume, sessionId, send) });
+      } catch (err) {
+        send({ type: "error", error: err instanceof Error ? err.message : String(err) });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+async function runEvaluation(
+  jobDescription: string,
+  resume: string,
+  sessionId: string,
+  send: (event: EvaluateStreamEvent) => void,
+): Promise<EvaluationRecord> {
+  send({ type: "step", step: 0 });
   let scoringObject;
   let llmRequest: LlmRequestInfo;
   let llmUsage: TokenUsage;
@@ -69,13 +103,14 @@ export async function POST(req: NextRequest) {
     llmUsage = result.usage;
   } catch (err) {
     console.error("Claude scoring rubric generation failed", err);
-    const message =
+    throw new Error(
       err instanceof ClaudeScoringError
         ? err.message
-        : "Unable to generate a scoring rubric right now. Please try again.";
-    return NextResponse.json({ error: message }, { status: 502 });
+        : "Unable to generate a scoring rubric right now. Please try again.",
+    );
   }
 
+  send({ type: "step", step: 1 });
   const jevRequest = buildResumeJevRequest(scoringObject, resume);
 
   let jevResponse;
@@ -83,13 +118,12 @@ export async function POST(req: NextRequest) {
     jevResponse = await callJev(jevRequest);
   } catch (err) {
     console.error("Jev evaluation failed", err);
-    const message =
-      err instanceof JevClientError
-        ? err.message
-        : "Unable to reach Jev right now. Please try again.";
-    return NextResponse.json({ error: message }, { status: 502 });
+    throw new Error(
+      err instanceof JevClientError ? err.message : "Unable to reach Jev right now. Please try again.",
+    );
   }
 
+  send({ type: "step", step: 2 });
   const metricResults = computeMetricResults(scoringObject, jevResponse.answers);
   const overallScore = computeOverallScore(metricResults);
 
@@ -118,8 +152,7 @@ export async function POST(req: NextRequest) {
     persisted = false;
   }
 
-  const record: EvaluationRecord = { ...recordToStore, id, persisted };
-  return NextResponse.json({ record });
+  return { ...recordToStore, id, persisted };
 }
 
 function validateBody(body: unknown): string | null {

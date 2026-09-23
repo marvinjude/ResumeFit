@@ -1,14 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { Check, Loader2 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-
-const MESSAGES = [
-  "Generating scoring rubric with an LLM…",
-  "Scoring the resume with Jev…",
-  "Computing the weighted match score…",
-];
+import { NeuralOrb } from "@/components/evaluation/neural-orb";
+import { cn } from "@/lib/utils";
 
 const STAGES = [
   "Generate scoring rubric (LLM)",
@@ -16,58 +10,46 @@ const STAGES = [
   "Compute weighted match score",
 ];
 
+interface EvaluationStatusProps {
+  /** Index of the stage the server is currently running, from the
+   * /api/evaluate event stream. Earlier stages are done. */
+  step: number;
+}
+
 /**
- * A simple, honest "working on it" indicator: cycles through a few status
- * lines, an indeterminate-feeling progress bar, and the pipeline stages
- * this run passes through — while the single evaluation request is in
- * flight. No candidate counts, just visible progress.
+ * Live pipeline progress: a rotating 3D neural-network orb while the run is in flight, and
+ * the stage list driven by the server's step events — done stages are
+ * ticked, and the spinner sits beside the stage currently running.
  */
-export function EvaluationStatus() {
-  const [index, setIndex] = React.useState(0);
-  const [value, setValue] = React.useState(8);
-  const [checked, setChecked] = React.useState(0);
-
-  React.useEffect(() => {
-    const textTimer = setInterval(() => {
-      setIndex((i) => (i + 1) % MESSAGES.length);
-    }, 1500);
-    const barTimer = setInterval(() => {
-      setValue((v) => (v < 92 ? v + (92 - v) * 0.1 + 1 : v));
-    }, 200);
-    const checkTimer = setInterval(() => {
-      setChecked((c) => (c < STAGES.length ? c + 1 : 0));
-    }, 900);
-    return () => {
-      clearInterval(textTimer);
-      clearInterval(barTimer);
-      clearInterval(checkTimer);
-    };
-  }, []);
-
+export function EvaluationStatus({ step }: EvaluationStatusProps) {
   return (
-    <div className="flex flex-col items-center gap-6 px-8 py-12 text-center">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--muted-foreground)]" />
-        <p className="text-sm font-medium">{MESSAGES[index]}</p>
-        <Progress value={value} className="w-48" />
-      </div>
+    <div className="flex flex-col items-center gap-8 px-8 py-12">
+      <NeuralOrb />
 
-      <ul className="flex w-full flex-col gap-1.5 text-left">
+      <ul className="flex w-full flex-col gap-2 text-left" aria-live="polite">
         {STAGES.map((stage, i) => {
-          const isChecked = i < checked;
+          const done = i < step;
+          const active = i === step;
           return (
             <li
               key={stage}
-              className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]"
-            >
-              {isChecked ? (
-                <Check className="h-3 w-3 shrink-0 text-[var(--success)]" />
-              ) : (
-                <span className="h-3 w-3 shrink-0 rounded-full border border-[var(--border-strong)]" />
+              aria-current={active ? "step" : undefined}
+              className={cn(
+                "flex items-center gap-2 text-sm",
+                done || active ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]",
+                active && "font-medium",
               )}
-              <span className={isChecked ? "text-[var(--foreground)]" : ""}>
-                {stage}
-              </span>
+            >
+              {done ? (
+                <Check className="h-4 w-4 shrink-0 text-[var(--success)]" />
+              ) : active ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--accent)]" />
+              ) : (
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                  <span className="h-3 w-3 rounded-full border border-[var(--border-strong)]" />
+                </span>
+              )}
+              <span>{stage}</span>
             </li>
           );
         })}

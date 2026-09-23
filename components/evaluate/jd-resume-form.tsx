@@ -58,7 +58,7 @@ export function JdResumeForm({
           placeholder="Paste the job description here, or click Use sample to try one…"
           maxLength={MAX_TEXT_LENGTH}
           disabled={submitting}
-          className="min-h-56 flex-1 resize-none font-mono text-base leading-relaxed md:text-xs lg:min-h-0"
+          className="min-h-56 flex-1 resize-none text-base leading-relaxed md:text-xs lg:min-h-0"
         />
       </div>
 
@@ -79,7 +79,7 @@ export function JdResumeForm({
           placeholder="Paste the candidate's resume here, or click Use sample to try one…"
           maxLength={MAX_TEXT_LENGTH}
           disabled={submitting}
-          className="min-h-56 flex-1 resize-none font-mono text-base leading-relaxed md:text-xs lg:min-h-0"
+          className="min-h-56 flex-1 resize-none text-base leading-relaxed md:text-xs lg:min-h-0"
         />
       </div>
 

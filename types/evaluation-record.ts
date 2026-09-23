@@ -40,3 +40,10 @@ export interface EvaluationSummary {
   jobTitleGuess: string;
   resumeTitleGuess: string;
 }
+
+/** One line of the POST /api/evaluate NDJSON stream. `step` is the index of
+ * the pipeline stage that just started (0 rubric, 1 Jev, 2 score + save). */
+export type EvaluateStreamEvent =
+  | { type: "step"; step: number }
+  | { type: "result"; record: EvaluationRecord }
+  | { type: "error"; error: string };
