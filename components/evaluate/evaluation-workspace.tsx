@@ -77,8 +77,8 @@ export function EvaluationWorkspace({ initialRecord }: EvaluationWorkspaceProps)
   }, [jobDescription, resume, router, scrollToResults]);
 
   return (
-    <div className="grid flex-1 grid-cols-1 gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6 md:px-8 lg:min-h-0 lg:grid-cols-2">
-      <div className="flex flex-col rounded-xl border border-[var(--border)] bg-[var(--card)] lg:min-h-0 lg:overflow-hidden">
+    <div className="grid flex-1 grid-cols-1 bg-[var(--card)] lg:min-h-0 lg:grid-cols-2">
+      <div className="flex flex-col border-b border-[var(--border)] lg:min-h-0 lg:overflow-hidden lg:border-r lg:border-b-0">
         <div className="flex-1 p-4 sm:p-6 lg:min-h-0 lg:overflow-y-auto">
           <JdResumeForm
             jobDescription={jobDescription}
@@ -96,7 +96,7 @@ export function EvaluationWorkspace({ initialRecord }: EvaluationWorkspaceProps)
 
       <div
         ref={resultsRef}
-        className="flex scroll-mt-4 flex-col rounded-xl border border-[var(--border)] bg-[var(--card)] lg:min-h-0 lg:overflow-hidden"
+        className="flex flex-col lg:min-h-0 lg:overflow-hidden"
       >
         <div className="flex min-h-56 flex-1 flex-col px-4 pb-4 sm:px-6 sm:pb-6 lg:min-h-0 lg:overflow-y-auto">
           {status === "running" ? (
