@@ -1,5 +1,5 @@
 import "server-only";
-import { ObjectId, type Filter } from "mongodb";
+import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongo/client";
 import type { EvaluationRecord, EvaluationSummary } from "@/types/evaluation-record";
 
@@ -34,24 +34,10 @@ export async function listRecentEvaluations(
   sessionId: string,
   limit = 15,
 ): Promise<EvaluationSummary[]> {
-  return listEvaluations({ sessionId, archivedAt: { $exists: false } }, limit);
-}
-
-export async function listArchivedEvaluations(
-  sessionId: string,
-  limit = 15,
-): Promise<EvaluationSummary[]> {
-  return listEvaluations({ sessionId, archivedAt: { $exists: true } }, limit);
-}
-
-async function listEvaluations(
-  filter: Filter<StoredEvaluation>,
-  limit: number,
-): Promise<EvaluationSummary[]> {
   const db = await getDb();
   const docs = await db
     .collection<StoredEvaluation & { _id: ObjectId }>(COLLECTION)
-    .find(filter)
+    .find({ sessionId, archivedAt: { $exists: false } })
     .sort({ createdAt: -1 })
     .limit(limit)
     .project<{
@@ -98,12 +84,8 @@ export async function getEvaluationById(
 }
 
 /** Archiving only hides an evaluation from the Recent list — the document
- * is kept, stays viewable by URL, and can be unarchived. */
-export async function setEvaluationArchived(
-  sessionId: string,
-  id: string,
-  archived: boolean,
-): Promise<boolean> {
+ * is kept and stays viewable by URL. */
+export async function archiveEvaluation(sessionId: string, id: string): Promise<boolean> {
   let objectId: ObjectId;
   try {
     objectId = new ObjectId(id);
@@ -113,11 +95,6 @@ export async function setEvaluationArchived(
   const db = await getDb();
   const result = await db
     .collection<StoredEvaluation & { _id: ObjectId }>(COLLECTION)
-    .updateOne(
-      { _id: objectId, sessionId },
-      archived
-        ? { $set: { archivedAt: new Date().toISOString() } }
-        : { $unset: { archivedAt: "" } },
-    );
+    .updateOne({ _id: objectId, sessionId }, { $set: { archivedAt: new Date().toISOString() } });
   return result.matchedCount > 0;
 }
