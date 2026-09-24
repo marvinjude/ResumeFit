@@ -19,6 +19,8 @@ interface JdResumeFormProps {
   claudeConfigured: boolean | null;
   jevConfigured: boolean | null;
   hasResult: boolean;
+  /** Offer the sample pickers — off when viewing a previous evaluation. */
+  showSamples: boolean;
 }
 
 export function JdResumeForm({
@@ -31,6 +33,7 @@ export function JdResumeForm({
   claudeConfigured,
   jevConfigured,
   hasResult,
+  showSamples,
 }: JdResumeFormProps) {
   const canSubmit =
     jobDescription.trim().length > 0 &&
@@ -42,20 +45,26 @@ export function JdResumeForm({
   return (
     <div className="flex h-full flex-col gap-6 lg:min-h-[480px]">
       <div className="flex flex-1 flex-col gap-1.5 lg:min-h-0">
-        <div className="flex items-center justify-between">
+        <div className="flex h-9 items-center justify-between md:h-7">
           <Label htmlFor="job-description">Job description</Label>
-          <SamplePicker
-            label="Use sample"
-            samples={SAMPLE_JOB_DESCRIPTIONS}
-            onSelect={onJobDescriptionChange}
-            disabled={submitting}
-          />
+          {showSamples && (
+            <SamplePicker
+              label="Use sample"
+              samples={SAMPLE_JOB_DESCRIPTIONS}
+              onSelect={onJobDescriptionChange}
+              disabled={submitting}
+            />
+          )}
         </div>
         <Textarea
           id="job-description"
           value={jobDescription}
           onChange={(e) => onJobDescriptionChange(e.target.value)}
-          placeholder="Paste the job description here, or click Use sample to try one…"
+          placeholder={
+            showSamples
+              ? "Paste the job description here, or click Use sample to try one…"
+              : "Paste the job description here…"
+          }
           maxLength={MAX_TEXT_LENGTH}
           disabled={submitting}
           className="min-h-56 flex-1 resize-none text-base leading-relaxed md:text-xs lg:min-h-0"
@@ -63,20 +72,26 @@ export function JdResumeForm({
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 lg:min-h-0">
-        <div className="flex items-center justify-between">
+        <div className="flex h-9 items-center justify-between md:h-7">
           <Label htmlFor="resume">Resume</Label>
-          <SamplePicker
-            label="Use sample"
-            samples={SAMPLE_RESUMES}
-            onSelect={onResumeChange}
-            disabled={submitting}
-          />
+          {showSamples && (
+            <SamplePicker
+              label="Use sample"
+              samples={SAMPLE_RESUMES}
+              onSelect={onResumeChange}
+              disabled={submitting}
+            />
+          )}
         </div>
         <Textarea
           id="resume"
           value={resume}
           onChange={(e) => onResumeChange(e.target.value)}
-          placeholder="Paste the candidate's resume here, or click Use sample to try one…"
+          placeholder={
+            showSamples
+              ? "Paste the candidate's resume here, or click Use sample to try one…"
+              : "Paste the candidate's resume here…"
+          }
           maxLength={MAX_TEXT_LENGTH}
           disabled={submitting}
           className="min-h-56 flex-1 resize-none text-base leading-relaxed md:text-xs lg:min-h-0"

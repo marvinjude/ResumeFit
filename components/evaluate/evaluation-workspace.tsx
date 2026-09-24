@@ -115,6 +115,7 @@ export function EvaluationWorkspace({ initialRecord }: EvaluationWorkspaceProps)
             claudeConfigured={config?.claudeConfigured ?? null}
             jevConfigured={config?.jevConfigured ?? null}
             hasResult={record !== null}
+            showSamples={!initialRecord}
           />
         </div>
       </div>
